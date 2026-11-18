@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Registro de Visita — Brisa Mar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg:#EEF2F1;
+    --surface:#FFFFFF;
+    --surface-2:#F4F7F6;
+    --ink:#12262B;
+    --ink-muted:#52666B;
+    --primary:#0E5C63;
+    --primary-ink:#FFFFFF;
+    --accent:#E0653A;
+    --border:#D8DFDD;
+    --ok:#1F7A4D;
+    --err:#B3261E;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E1A1C;
+      --surface:#152528;
+      --surface-2:#1B2C2F;
+      --ink:#EAF1F0;
+      --ink-muted:#9BB0AF;
+      --primary:#4FA9AD;
+      --primary-ink:#08181A;
+      --accent:#F08258;
+      --border:#2A3D3F;
+      --ok:#4FBE85;
+      --err:#F2867D;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1A1C;
+    --surface:#152528;
+    --surface-2:#1B2C2F;
+    --ink:#EAF1F0;
+    --ink-muted:#9BB0AF;
+    --primary:#4FA9AD;
+    --primary-ink:#08181A;
+    --accent:#F08258;
+    --border:#2A3D3F;
+    --ok:#4FBE85;
+    --err:#F2867D;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Work Sans",system-ui,-apple-system,sans-serif;
+    padding: max(16px, env(safe-area-inset-top,0px)) 16px max(24px, env(safe-area-inset-bottom,0px));
+    line-height:1.45;
+  }
+  .wrap{max-width:560px;margin:0 auto;}
+  h1,h2,h3{font-family:"Fraunces",Georgia,serif;text-wrap:balance;margin:0;}
+  header.top{padding:28px 4px 18px;}
+  .eyebrow{
+    font-size:12px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--primary);font-weight:600;margin-bottom:6px;
+  }
+  header.top h1{font-size:28px;font-weight:600;color:var(--ink);}
+  header.top p{color:var(--ink-muted);margin-top:8px;font-size:14.5px;}
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:22px;
+    margin-bottom:16px;
+  }
+  .card h2{font-size:17px;font-weight:600;margin-bottom:14px;color:var(--ink);}
+  .field{margin-bottom:16px;}
+  .field:last-child{margin-bottom:0;}
+  label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink);}
+  .hint{font-size:12px;color:var(--ink-muted);margin-top:5px;}
+  .hint.err{color:var(--err);}
+  input[type=text], input[type=email], input[type=tel], select{
+    width:100%;
+    padding:11px 12px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:var(--surface-2);
+    color:var(--ink);
+    font-family:inherit;
+    font-size:15px;
+  }
+  input:focus, select:focus{outline:2px solid var(--primary); outline-offset:1px;}
+  .row2{display:flex; gap:12px;}
+  .row2 > .field{flex:1; min-width:0;}
+  .radiogroup, .checkgroup{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{
+    border:1px solid var(--border);
+    background:var(--surface-2);
+    border-radius:999px;
+    padding:9px 14px;
+    font-size:13.5px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .chip input{position:absolute; opacity:0; pointer-events:none;}
+  .chip.selected{
+    background:var(--primary); color:var(--primary-ink); border-color:var(--primary); font-weight:600;
+  }
+  .consent{
+    display:flex; gap:12px; align-items:flex-start;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px;
+    margin-bottom:12px;
+  }
+  .consent:last-child{margin-bottom:0;}
+  .consent input[type=checkbox]{
+    margin-top:3px; width:18px; height:18px; flex:none; accent-color:var(--primary);
+  }
+  .consent p{margin:0; font-size:13px; color:var(--ink-muted);}
+  .consent strong{color:var(--ink); font-weight:600;}
+  canvas#pad{
+    width:100%; height:150px; display:block;
+    background:var(--surface-2);
+    border:1px dashed var(--border);
+    border-radius:10px;
+    touch-action:none;
+  }
+  .pad-row{display:flex; justify-content:space-between; align-items:center; margin-top:8px;}
+  .link-btn{
+    background:none; border:none; color:var(--primary); font-weight:600; font-size:13px; cursor:pointer; padding:6px 0;
+  }
+  button.submit{
+    width:100%;
+    background:var(--primary);
+    color:var(--primary-ink);
+    border:none;
+    padding:15px;
+    border-radius:12px;
+    font-family:inherit;
+    font-size:15.5px;
+    font-weight:700;
+    cursor:pointer;
+    margin-top:4px;
+  }
+  button.submit:disabled{opacity:.45; cursor:not-allowed;}
+  button.submit:active:not(:disabled){transform:translateY(1px);}
+  .msg{
+    border-radius:12px; padding:12px 14px; font-size:13.5px; margin-top:14px; display:none;
+  }
+  .msg.show{display:block;}
+  .msg.err{background:rgba(179,38,30,.1); color:var(--err); border:1px solid rgba(179,38,30,.3);}
+  .msg.ok{background:rgba(31,122,77,.1); color:var(--ok); border:1px solid rgba(31,122,77,.3);}
+  footer.foot{
+    text-align:center; padding:22px 6px 6px; font-size:12px; color:var(--ink-muted);
+  }
+  footer.foot button{
+    background:none;border:none;color:var(--ink-muted);text-decoration:underline;cursor:pointer;font-size:12px;font-family:inherit;
+  }
+
+  /* ---- Success screen ---- */
+  #successScreen{display:none; text-align:center; padding:48px 12px;}
+  #successScreen .check{
+    width:64px;height:64px;border-radius:50%;background:var(--ok);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 18px;
+  }
+  #successScreen h1{font-size:24px;margin-bottom:8px;}
+  #successScreen p{color:var(--ink-muted);font-size:14.5px;}
+
+  /* ---- Poster / QR view ---- */
+  #posterScreen{display:none;}
+  #posterScreen .poster{
+    background:var(--surface); border:1px solid var(--border); border-radius:20px;
+    padding:40px 28px; text-align:center; margin-top:24px;
+  }
+  #posterScreen .eyebrow{justify-content:center;display:flex;}
+  #posterScreen h1{font-size:26px; margin:6px 0 4px;}
+  #posterScreen canvas{margin:22px auto; display:block; border-radius:12px;}
+  #posterScreen .steps{
+    text-align:left; font-size:13.5px; color:var(--ink-muted); margin-top:18px;
+    border-top:1px solid var(--border); padding-top:16px;
+  }
+  #posterScreen .steps li{margin-bottom:6px;}
+  .back-row{margin-top:16px;}
+  .back-row button{
+    background:none;border:1px solid var(--border);color:var(--ink);border-radius:10px;
+    padding:9px 14px;font-family:inherit;font-size:13px;cursor:pointer;
+  }
+
+  @media print{
+    body{background:#fff;}
+    header.top, .card, footer.foot, .back-row{display:none !important;}
+    #posterScreen{display:block !important;}
+    #posterScreen .poster{border:none;}
+  }
+  #setupBanner{
+    display:none; background:#5B3A1B; color:#FCEBD8; font-size:12.5px;
+    padding:10px 14px; border-radius:10px; margin-bottom:16px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="setupBanner"></div>
+
+  <!-- ============ FORM SCREEN ============ -->
+  <div id="formScreen">
+    <header class="top">
+      <div class="eyebrow">Brisa Mar · Concón</div>
+      <h1>Registro de visita a obra</h1>
+      <p>Antes de ingresar a la obra, complete sus datos. Toma menos de un minuto.</p>
+    </header>
+
+    <form id="visitForm">
+      <div class="card">
+        <h2>Sus datos</h2>
+        <div class="row2">
+          <div class="field">
+            <label for="nombres">Nombres</label>
+            <input type="text" id="nombres" required autocomplete="given-name">
+          </div>
+          <div class="field">
+            <label for="apellidos">Apellidos</label>
+            <input type="text" id="apellidos" required autocomplete="family-name">
+          </div>
+        </div>
+        <div class="field">
+          <label for="rut">RUT</label>
+          <input type="text" id="rut" placeholder="12.345.678-9" required inputmode="text">
+          <div class="hint" id="rutHint">Con puntos y guión.</div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="email">Correo electrónico</label>
+            <input type="email" id="email" required autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="telefono">Teléfono</label>
+            <input type="tel" id="telefono" placeholder="+56 9 1234 5678" required autocomplete="tel">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>¿Qué proyecto viene a visitar?</h2>
+        <div class="radiogroup" id="proyectoGroup" role="radiogroup">
+          <label class="chip"><input type="radio" name="proyecto" value="Torre A"> Torre A</label>
+          <label class="chip"><input type="radio" name="proyecto" value="Torre B"> Torre B</label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>¿Cómo se enteró de nosotros?</h2>
+        <div class="radiogroup" id="enteroGroup" role="radiogroup">
+          <label class="chip"><input type="radio" name="entero" value="Redes sociales"> Redes sociales</label>
+          <label class="chip"><input type="radio" name="entero" value="Letrero / publicidad en el lugar"> Letrero en el lugar</label>
+          <label class="chip"><input type="radio" name="entero" value="Referido de un cliente"> Referido</label>
+          <label class="chip"><input type="radio" name="entero" value="Google / Internet"> Google / Internet</label>
+          <label class="chip"><input type="radio" name="entero" value="Otro"> Otro</label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Autorizaciones</h2>
+
+        <div class="consent">
+          <input type="checkbox" id="consentDatos" required>
+          <p><strong>Tratamiento de datos personales.</strong> Autorizo a Inmobiliaria Brisa Mar SPA a recopilar y tratar mis datos personales (nombres, apellidos, RUT, correo y teléfono) para gestionar mi visita, contactarme sobre los proyectos Brisa Mar y con fines de análisis comercial interno, conforme a la Ley N.º 19.628 y la Ley N.º 21.719 de Protección de Datos Personales. Puedo ejercer mis derechos de acceso, rectificación, cancelación y oposición escribiendo a contacto@brisamar.cl.</p>
+        </div>
+
+        <div class="consent">
+          <input type="checkbox" id="consentObra" required>
+          <p><strong>Ingreso a obra en construcción.</strong> Declaro que ingreso voluntariamente a un recinto en construcción, actividad que conlleva riesgos inherentes. Me comprometo a seguir las instrucciones del personal de la obra y a usar los elementos de protección personal (casco, chaleco reflectante u otros) que se me indiquen. Libero a Inmobiliaria Brisa Mar SPA y a la constructora a cargo de responsabilidad por accidentes originados en el incumplimiento de estas instrucciones, sin perjuicio de las responsabilidades que la ley no permite renunciar.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Firma</h2>
+        <canvas id="pad"></canvas>
+        <div class="pad-row">
+          <span class="hint" id="firmaHint">Firme con el dedo o el mouse.</span>
+          <button type="button" class="link-btn" id="clearPad">Borrar</button>
+        </div>
+      </div>
+
+      <button type="submit" class="submit" id="submitBtn" disabled>Registrar visita</button>
+      <div class="msg err" id="errMsg"></div>
+    </form>
+
+    <footer class="foot">
+      Inmobiliaria Brisa Mar SPA — Concón, Chile
+      <br>
+      <button type="button" id="showPoster">Ver cartel con QR para imprimir</button>
+    </footer>
+  </div>
+
+  <!-- ============ SUCCESS SCREEN ============ -->
+  <div id="successScreen">
+    <div class="check">✓</div>
+    <h1>¡Registro exitoso!</h1>
+    <p>Gracias por su visita. Un ejecutivo lo atenderá enseguida.</p>
+  </div>
+
+  <!-- ============ POSTER SCREEN ============ -->
+  <div id="posterScreen">
+    <div class="poster">
+      <div class="eyebrow">Brisa Mar · Sala de ventas</div>
+      <h1>Escanea para registrar tu visita</h1>
+      <canvas id="qrCanvas"></canvas>
+      <div class="steps">
+        <li>1. Escanea el código QR con la cámara de tu celular.</li>
+        <li>2. Completa tus datos y autorizaciones.</li>
+        <li>3. Firma en pantalla — toma menos de un minuto.</li>
+      </div>
+    </div>
+    <div class="back-row"><button type="button" id="backFromPoster">← Volver al formulario</button></div>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   CONFIGURACIÓN — reemplaza estos dos valores antes de publicar
+   ========================================================= */
+const SUPABASE_URL = "https://safmmdmabpqrzoumtuhy.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_HfS4KjNutnmXdl957n4qYA__F1uFeMq";
+const TABLE = "visitas_obra";
+/* ========================================================= */
+
+const isConfigured = !SUPABASE_URL.includes("TU-PROYECTO") && !SUPABASE_ANON_KEY.includes("PEGA-AQUI");
+let sb = null;
+if (isConfigured && window.supabase) {
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+const banner = document.getElementById('setupBanner');
+if (!isConfigured) {
+  banner.style.display = 'block';
+  banner.textContent = 'Falta configurar SUPABASE_URL y SUPABASE_ANON_KEY en el archivo antes de publicarlo (ver instrucciones adjuntas).';
+}
+
+/* ---------- RUT ---------- */
+function limpiaRut(v){ return v.replace(/[^0-9kK]/g, '').toUpperCase(); }
+function formateaRut(v){
+  const limpio = limpiaRut(v);
+  if (limpio.length <= 1) return limpio;
+  const cuerpo = limpio.slice(0, -1);
+  const dv = limpio.slice(-1);
+  const cuerpoFmt = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return cuerpoFmt + '-' + dv;
+}
+function validaRut(v){
+  const limpio = limpiaRut(v);
+  if (limpio.length < 2) return false;
+  const cuerpo = limpio.slice(0, -1);
+  const dv = limpio.slice(-1);
+  let suma = 0, multiplo = 2;
+  for (let i = cuerpo.length - 1; i >= 0; i--){
+    suma += parseInt(cuerpo[i], 10) * multiplo;
+    multiplo = multiplo < 7 ? multiplo + 1 : 2;
+  }
+  const resto = 11 - (suma % 11);
+  const dvEsperado = resto === 11 ? '0' : resto === 10 ? 'K' : String(resto);
+  return dv === dvEsperado;
+}
+const rutInput = document.getElementById('rut');
+const rutHint = document.getElementById('rutHint');
+rutInput.addEventListener('input', () => {
+  const pos = rutInput.selectionStart;
+  rutInput.value = formateaRut(rutInput.value);
+  rutInput.setSelectionRange(rutInput.value.length, rutInput.value.length);
+});
+rutInput.addEventListener('blur', () => {
+  if (!rutInput.value) return;
+  if (validaRut(rutInput.value)){
+    rutHint.textContent = 'RUT válido.'; rutHint.classList.remove('err');
+  } else {
+    rutHint.textContent = 'El RUT no parece válido, revísalo.'; rutHint.classList.add('err');
+  }
+  checkFormValid();
+});
+
+/* ---------- Chips (radio groups) ---------- */
+document.querySelectorAll('.radiogroup').forEach(group => {
+  group.addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    group.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+    chip.classList.add('selected');
+    chip.querySelector('input').checked = true;
+    checkFormValid();
+  });
+});
+
+/* ---------- Signature pad ---------- */
+const canvas = document.getElementById('pad');
+const ctx = canvas.getContext('2d');
+let drawing = false, hasSignature = false;
+
+function resizeCanvas(){
+  const ratio = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * ratio;
+  canvas.height = rect.height * ratio;
+  ctx.scale(ratio, ratio);
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--ink');
+}
+window.addEventListener('resize', () => { const data = hasSignature ? canvas.toDataURL() : null; resizeCanvas(); });
+resizeCanvas();
+
+function pos(e){
+  const rect = canvas.getBoundingClientRect();
+  const t = e.touches ? e.touches[0] : e;
+  return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+}
+function start(e){ drawing = true; hasSignature = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); checkFormValid(); e.preventDefault(); }
+function move(e){ if(!drawing) return; const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); e.preventDefault(); }
+function end(){ drawing = false; }
+canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+canvas.addEventListener('touchstart', start, {passive:false}); canvas.addEventListener('touchmove', move, {passive:false}); canvas.addEventListener('touchend', end);
+
+document.getElementById('clearPad').addEventListener('click', () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  hasSignature = false;
+  checkFormValid();
+});
+
+/* ---------- Form validity ---------- */
+const submitBtn = document.getElementById('submitBtn');
+function checkFormValid(){
+  const nombres = document.getElementById('nombres').value.trim();
+  const apellidos = document.getElementById('apellidos').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const telefono = document.getElementById('telefono').value.trim();
+  const rutOk = validaRut(rutInput.value);
+  const proyecto = document.querySelector('input[name=proyecto]:checked');
+  const entero = document.querySelector('input[name=entero]:checked');
+  const consentDatos = document.getElementById('consentDatos').checked;
+  const consentObra = document.getElementById('consentObra').checked;
+  const ok = nombres && apellidos && email.includes('@') && telefono && rutOk && proyecto && entero && consentDatos && consentObra && hasSignature;
+  submitBtn.disabled = !ok;
+  return ok;
+}
+document.getElementById('visitForm').addEventListener('input', checkFormValid);
+document.getElementById('visitForm').addEventListener('change', checkFormValid);
+
+/* ---------- Submit ---------- */
+const errMsg = document.getElementById('errMsg');
+document.getElementById('visitForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!checkFormValid()) return;
+  errMsg.classList.remove('show');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Enviando…';
+
+  const payload = {
+    proyecto: document.querySelector('input[name=proyecto]:checked').value,
+    nombres: document.getElementById('nombres').value.trim(),
+    apellidos: document.getElementById('apellidos').value.trim(),
+    rut: rutInput.value.trim(),
+    email: document.getElementById('email').value.trim(),
+    telefono: document.getElementById('telefono').value.trim(),
+    como_se_entero: document.querySelector('input[name=entero]:checked').value,
+    consiente_datos: true,
+    consiente_ingreso_obra: true,
+    firma_png: canvas.toDataURL('image/png'),
+    canal: 'qr'
+  };
+
+  try {
+    if (!sb) throw new Error('El formulario aún no está configurado con tu proyecto de Supabase.');
+    const { error } = await sb.from(TABLE).insert([payload]);
+    if (error) throw error;
+    document.getElementById('formScreen').style.display = 'none';
+    document.getElementById('successScreen').style.display = 'block';
+  } catch (err) {
+    errMsg.textContent = 'No pudimos guardar tu registro (' + (err.message || 'error desconocido') + '). Intenta de nuevo o avisa en el mesón.';
+    errMsg.classList.add('show');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Registrar visita';
+  }
+});
+
+/* ---------- Poster / QR view ---------- */
+document.getElementById('showPoster').addEventListener('click', () => {
+  document.getElementById('formScreen').style.display = 'none';
+  document.getElementById('posterScreen').style.display = 'block';
+  const qrCanvas = document.getElementById('qrCanvas');
+  QRCode.toCanvas(qrCanvas, window.location.href.split('#')[0], { width: 260, margin: 1, color: { dark: '#12262B', light: '#00000000' } });
+});
+document.getElementById('backFromPoster').addEventListener('click', () => {
+  document.getElementById('posterScreen').style.display = 'none';
+  document.getElementById('formScreen').style.display = 'block';
+});
+</script>
+</body>
+</html>
